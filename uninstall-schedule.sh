@@ -5,14 +5,12 @@ set -euo pipefail
 
 TARGET_DIR="${HOME}/Library/LaunchAgents"
 
-for label in com.yoshiharu.pomodoro-loop.start com.yoshiharu.pomodoro-loop.stop; do
+for label in local.pomodoro-loop.start local.pomodoro-loop.stop; do
   dst="${TARGET_DIR}/${label}.plist"
 
   if [[ -f "$dst" ]]; then
     launchctl unload "$dst" 2>/dev/null || true
     rm -f "$dst"
     echo "uninstalled: $label"
-  else
-    echo "not installed: $label"
   fi
 done

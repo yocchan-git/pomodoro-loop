@@ -28,7 +28,7 @@ cat "${HOME}/Library/Mobile Documents/com~apple~CloudDocs/pomodoro_state.txt"
 ## 2. スクリプトに実行権限を付ける
 
 ```bash
-cd ~/workspace/YoshiharuTakenaka/pomodoro-loop
+cd /path/to/pomodoro-loop  # clone した場所
 chmod +x pomodoro-loop.sh start.sh stop.sh status.sh
 ```
 
@@ -81,26 +81,26 @@ BREAK_MINUTES=1
 ### インストール
 
 ```bash
-cd ~/workspace/YoshiharuTakenaka/pomodoro-loop
+cd /path/to/pomodoro-loop  # clone した場所
 ./install-schedule.sh
 ```
 
 中身：
 
-- `launchd/com.yoshiharu.pomodoro-loop.start.plist` を `~/Library/LaunchAgents/` にコピー → `launchctl load`
-- `launchd/com.yoshiharu.pomodoro-loop.stop.plist` も同様
+- `launchd/local.pomodoro-loop.start.plist` を `~/Library/LaunchAgents/` にコピー → `launchctl load`
+- `launchd/local.pomodoro-loop.stop.plist` も同様
 - 既存があれば一度 unload してから再 load（冪等）
 
 確認：
 
 ```bash
 launchctl list | grep pomodoro
-# com.yoshiharu.pomodoro-loop.start  と  com.yoshiharu.pomodoro-loop.stop が出れば OK
+# local.pomodoro-loop.start  と  local.pomodoro-loop.stop が出れば OK
 ```
 
 ### 時刻を変えたい
 
-`launchd/com.yoshiharu.pomodoro-loop.start.plist` と `.stop.plist` の以下を編集：
+`launchd/local.pomodoro-loop.start.plist` と `.stop.plist` の以下を編集：
 
 ```xml
 <key>StartCalendarInterval</key>
