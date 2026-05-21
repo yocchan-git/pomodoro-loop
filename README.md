@@ -22,14 +22,17 @@ Mac で 25分作業 → 5分休憩 → ... を自動ループする仕組み。
 
 ```
 pomodoro-loop/
-├── README.md              # この文書
-├── setup-guide.md         # 初回セットアップ手順
-├── config.sh              # 値の調整（時間・サウンド・パス）
-├── pomodoro-loop.sh       # メインループ本体
-├── start.sh               # ループ開始
-├── stop.sh                # ループ停止
-├── status.sh              # 現在状態の確認
-└── pomodoro_state.txt     # 状態ファイルの雛形（初期値 "work"）
+├── README.md                # この文書
+├── setup-guide.md           # 初回セットアップ手順
+├── config.sh                # 値の調整（時間・サウンド・パス）
+├── pomodoro-loop.sh         # メインループ本体
+├── start.sh                 # ループ開始
+├── stop.sh                  # ループ停止
+├── status.sh                # 現在状態の確認
+├── install-schedule.sh      # 毎日 08:30/20:30 の自動 start/stop を登録
+├── uninstall-schedule.sh    # スケジュール解除
+├── launchd/                 # LaunchAgent plist 雛形（時刻はここで調整）
+└── pomodoro_state.txt       # 状態ファイルの雛形（初期値 "work"）
 ```
 
 state ファイルの実体は `~/Library/Mobile Documents/com~apple~CloudDocs/pomodoro_state.txt`（iCloud Drive）に置く。
@@ -48,6 +51,18 @@ state ファイルの実体は `~/Library/Mobile Documents/com~apple~CloudDocs/p
 ```
 
 初回起動時に状態ファイルが無ければ `work` で初期化される。
+
+## 自動 start/stop スケジュール（推奨）
+
+毎日決まった時刻に勝手に start / stop させる場合：
+
+```bash
+./install-schedule.sh    # 08:30 start / 20:30 stop を毎日
+./uninstall-schedule.sh  # 解除
+```
+
+時刻を変えたい場合は `launchd/*.plist` の `<integer>` を編集してから `install-schedule.sh` を再実行（冪等）。
+平日のみにしたい場合は plist の `StartCalendarInterval` を Array にして `Weekday` を 1..5 で並べる。詳細は `setup-guide.md` 参照。
 
 ## 値を変えたい
 

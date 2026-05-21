@@ -74,48 +74,80 @@ BREAK_MINUTES=1
 
 ---
 
-## Optional: ログイン時に自動開始したい場合
+## Optional: 毎日決まった時刻に自動 start / stop（推奨）
 
-LaunchAgent として登録すれば、Mac ログイン時に自動でループが始まる。
-**ただし「明示的に始めたい」派は不要**。以下は希望者のみ。
+「毎朝 08:30 に走り出して、20:30 に止める」みたいな運用にしたいなら、`install-schedule.sh` を 1 回叩くだけ。
 
-### LaunchAgent の plist を作る
-
-`~/Library/LaunchAgents/com.yoshiharu.pomodoro-loop.plist`：
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>Label</key>
-  <string>com.yoshiharu.pomodoro-loop</string>
-  <key>ProgramArguments</key>
-  <array>
-    <string>/Users/yoshiharu/workspace/YoshiharuTakenaka/pomodoro-loop/start.sh</string>
-  </array>
-  <key>RunAtLoad</key>
-  <true/>
-  <key>StandardOutPath</key>
-  <string>/tmp/pomodoro-loop.launchd.log</string>
-  <key>StandardErrorPath</key>
-  <string>/tmp/pomodoro-loop.launchd.err</string>
-</dict>
-</plist>
-```
-
-### ロード
+### インストール
 
 ```bash
-launchctl load ~/Library/LaunchAgents/com.yoshiharu.pomodoro-loop.plist
+cd ~/workspace/YoshiharuTakenaka/pomodoro-loop
+./install-schedule.sh
+```
+
+中身：
+
+- `launchd/com.yoshiharu.pomodoro-loop.start.plist` を `~/Library/LaunchAgents/` にコピー → `launchctl load`
+- `launchd/com.yoshiharu.pomodoro-loop.stop.plist` も同様
+- 既存があれば一度 unload してから再 load（冪等）
+
+確認：
+
+```bash
+launchctl list | grep pomodoro
+# com.yoshiharu.pomodoro-loop.start  と  com.yoshiharu.pomodoro-loop.stop が出れば OK
+```
+
+### 時刻を変えたい
+
+`launchd/com.yoshiharu.pomodoro-loop.start.plist` と `.stop.plist` の以下を編集：
+
+```xml
+<key>StartCalendarInterval</key>
+<dict>
+  <key>Hour</key>
+  <integer>8</integer>       <!-- ここを変える -->
+  <key>Minute</key>
+  <integer>30</integer>      <!-- ここを変える -->
+</dict>
+```
+
+編集後、もう一度 `./install-schedule.sh`（冪等なので unload → 再 load してくれる）。
+
+### 平日のみにしたい
+
+`StartCalendarInterval` を **Array** にして、各曜日（`Weekday`: 1=月, 2=火, ..., 5=金）を並べる：
+
+```xml
+<key>StartCalendarInterval</key>
+<array>
+  <dict>
+    <key>Weekday</key><integer>1</integer>
+    <key>Hour</key><integer>8</integer>
+    <key>Minute</key><integer>30</integer>
+  </dict>
+  <dict>
+    <key>Weekday</key><integer>2</integer>
+    <key>Hour</key><integer>8</integer>
+    <key>Minute</key><integer>30</integer>
+  </dict>
+  <!-- 3, 4, 5 も同様 -->
+</array>
 ```
 
 ### 解除
 
 ```bash
-launchctl unload ~/Library/LaunchAgents/com.yoshiharu.pomodoro-loop.plist
-rm ~/Library/LaunchAgents/com.yoshiharu.pomodoro-loop.plist
+./uninstall-schedule.sh
 ```
+
+LaunchAgent を unload して plist を消す。**現在動いている pomodoro 本体は止めない**ので、必要なら別途 `./stop.sh`。
+
+### スケジュール側で気をつけること
+
+- **start の二重発火** → `start.sh` は「既に running ならスキップ」する設計なので無害
+- **Mac が 08:30 にスリープ中だったら？** → 標準 macOS は「次に起き上がった時に launchd が遅延発火」してくれる。確実に走らせたいなら、システム設定 → バッテリー → スケジュールで Mac を 08:25 に起こす指定もできる
+- **20:30 に Pomodoro を強制停止される** → 集中作業中なら困るかも。delay したい時は `./uninstall-schedule.sh` で一時解除 → 翌朝 `./install-schedule.sh` で復帰
 
 ---
 
