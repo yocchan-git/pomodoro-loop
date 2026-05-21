@@ -9,9 +9,21 @@ mkdir -p "${HOME}/Library/Mobile Documents/com~apple~CloudDocs"
 cp pomodoro_state.txt "${HOME}/Library/Mobile Documents/com~apple~CloudDocs/pomodoro_state.txt"
 ```
 
+**注意**：`Mobile Documents` は **半角スペースを含む**（`MobileDocuments` ではない）。
+これは Apple が iCloud 系の保存場所として使う固定パス。コピペ時にスペースが消えていないか確認すること。
+シェルでは必ず `"..."` で囲む（クォート無しだと `Mobile` と `Documents` が別引数として扱われて失敗する）。
+
+確認：
+
+```bash
+cat "${HOME}/Library/Mobile Documents/com~apple~CloudDocs/pomodoro_state.txt"
+# → work と表示されれば OK
+```
+
 初期値は `work`（次に起動するべきフェーズ）。
 
 > 状態ファイルを iCloud に置かない場合は `config.sh` の `STATE_FILE` を書き換える（例：`${HOME}/.pomodoro_state.txt`）。
+> iCloud 同期の race を避けたいなら local に置いた方が確実。
 
 ## 2. スクリプトに実行権限を付ける
 
