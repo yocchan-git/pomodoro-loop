@@ -2,28 +2,26 @@
 
 macOS Sonoma 以降を前提。
 
-## 1. 状態ファイルを iCloud Drive に置く
+## 1. 状態ファイルを配置する
+
+デフォルトはローカル (`~/.pomodoro_state.txt`)。
 
 ```bash
-mkdir -p "${HOME}/Library/Mobile Documents/com~apple~CloudDocs"
-cp pomodoro_state.txt "${HOME}/Library/Mobile Documents/com~apple~CloudDocs/pomodoro_state.txt"
+cp pomodoro_state.txt "${HOME}/.pomodoro_state.txt"
 ```
-
-**注意**：`Mobile Documents` は **半角スペースを含む**（`MobileDocuments` ではない）。
-これは Apple が iCloud 系の保存場所として使う固定パス。コピペ時にスペースが消えていないか確認すること。
-シェルでは必ず `"..."` で囲む（クォート無しだと `Mobile` と `Documents` が別引数として扱われて失敗する）。
 
 確認：
 
 ```bash
-cat "${HOME}/Library/Mobile Documents/com~apple~CloudDocs/pomodoro_state.txt"
+cat "${HOME}/.pomodoro_state.txt"
 # → work と表示されれば OK
 ```
 
 初期値は `work`（次に起動するべきフェーズ）。
 
-> 状態ファイルを iCloud に置かない場合は `config.sh` の `STATE_FILE` を書き換える（例：`${HOME}/.pomodoro_state.txt`）。
-> iCloud 同期の race を避けたいなら local に置いた方が確実。
+> **なぜローカルがデフォルトか**：当初は iCloud Drive (`~/Library/Mobile Documents/com~apple~CloudDocs/`) に置いていたが、launchd 経由で起動された process は macOS の TCC により iCloud Drive へのアクセスがブロックされ、自動スケジュール運用が壊れることが判明したため。手動 `./start.sh` だけならターミナル経由でアクセスできる。
+>
+> iCloud 同期したい場合は `config.sh` の `STATE_FILE` を iCloud パスに切り替える。その場合、launchd 経由起動は失敗するので自動スケジュールとは併用不可、もしくはシェル/launchd に Full Disk Access を付与する必要がある。
 
 ## 2. スクリプトに実行権限を付ける
 
@@ -100,7 +98,9 @@ launchctl list | grep pomodoro
 
 ### 時刻を変えたい
 
-`launchd/local.pomodoro-loop.start.plist` と `.stop.plist` の以下を編集：
+**2 箇所揃えて更新する**：
+
+1. `launchd/local.pomodoro-loop.start.plist` と `.stop.plist` の `Hour` / `Minute`
 
 ```xml
 <key>StartCalendarInterval</key>
@@ -111,6 +111,16 @@ launchctl list | grep pomodoro
   <integer>30</integer>      <!-- ここを変える -->
 </dict>
 ```
+
+2. `config.sh` の `SCHEDULE_START_TIME` / `SCHEDULE_STOP_TIME`（HHMM 4桁文字列、plist と一致させる）
+
+```bash
+SCHEDULE_START_TIME="0830"
+SCHEDULE_STOP_TIME="2030"
+```
+
+config.sh の値は、Mac 再起動時の `RunAtLoad` 起動が稼働時間帯内かどうかの判定に使われる（後述）。
+plist 側だけ変えて config.sh を放置すると、想定外の時刻に start.sh が走ってしまうので注意。
 
 編集後、もう一度 `./install-schedule.sh`（冪等なので unload → 再 load してくれる）。
 
@@ -148,6 +158,7 @@ LaunchAgent を unload して plist を消す。**現在動いている pomodoro
 - **start の二重発火** → `start.sh` は「既に running ならスキップ」する設計なので無害
 - **Mac が 08:30 にスリープ中だったら？** → 標準 macOS は「次に起き上がった時に launchd が遅延発火」してくれる。確実に走らせたいなら、システム設定 → バッテリー → スケジュールで Mac を 08:25 に起こす指定もできる
 - **20:30 に Pomodoro を強制停止される** → 集中作業中なら困るかも。delay したい時は `./uninstall-schedule.sh` で一時解除 → 翌朝 `./install-schedule.sh` で復帰
+- **Mac 再起動でループが死ぬ** → start.plist は `RunAtLoad=true` なので、ログイン直後にも 1 回 `start.sh --scheduled` が走る。稼働時間帯内（config.sh の `SCHEDULE_START_TIME`〜`SCHEDULE_STOP_TIME`）なら自動復活、範囲外なら何もせず終了する。手動 `./start.sh`（引数なし）はガード対象外なので、いつでも起動できる
 
 ---
 

@@ -7,6 +7,7 @@
   <key>ProgramArguments</key>
   <array>
     <string>__SCRIPT_DIR__/start.sh</string>
+    <string>--scheduled</string>
   </array>
   <key>StartCalendarInterval</key>
   <dict>
@@ -16,7 +17,9 @@
     <integer>30</integer>
   </dict>
   <key>RunAtLoad</key>
-  <false/>
+  <true/>
+  <key>AbandonProcessGroup</key>
+  <true/>
   <key>StandardOutPath</key>
   <string>/tmp/pomodoro-schedule.log</string>
   <key>StandardErrorPath</key>

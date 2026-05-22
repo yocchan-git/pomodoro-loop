@@ -62,7 +62,8 @@ pomodoro-loop/
 └── pomodoro_state.txt       # 状態ファイルの雛形（初期値 "work"）
 ```
 
-state ファイルの実体は `~/Library/Mobile Documents/com~apple~CloudDocs/pomodoro_state.txt`（iCloud Drive）に置く。
+state ファイルの実体はデフォルトで `~/.pomodoro_state.txt`（ローカル）に置く。
+iCloud Drive に置きたい場合は `config.sh` の `STATE_FILE` を切り替える（ただし launchd 経由の自動スケジュールでは TCC により iCloud アクセスがブロックされるため、自動スケジュール運用ならローカルのままが安全）。
 
 ## 日常運用
 
@@ -88,8 +89,10 @@ state ファイルの実体は `~/Library/Mobile Documents/com~apple~CloudDocs/p
 ./uninstall-schedule.sh  # 解除
 ```
 
-時刻を変えたい場合は `launchd/*.plist` の `<integer>` を編集してから `install-schedule.sh` を再実行（冪等）。
+時刻を変えたい場合は `launchd/*.plist` の `<integer>` と `config.sh` の `SCHEDULE_START_TIME` / `SCHEDULE_STOP_TIME` を揃えて編集してから `install-schedule.sh` を再実行（冪等）。
 平日のみにしたい場合は plist の `StartCalendarInterval` を Array にして `Weekday` を 1..5 で並べる。詳細は `setup-guide.md` 参照。
+
+Mac 再起動でループプロセスが死んでも、start.plist は `RunAtLoad=true` なのでログイン直後に `start.sh --scheduled` が自動で走り、稼働時間帯内なら復活する（時間帯外なら何もしない）。
 
 ## 値を変えたい
 
