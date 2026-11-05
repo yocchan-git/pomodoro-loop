@@ -74,7 +74,7 @@ BREAK_MINUTES=1
 
 ## Optional: 毎日決まった時刻に自動 start / stop（推奨）
 
-「毎朝 08:30 に走り出して、20:30 に止める」みたいな運用にしたいなら、`install-schedule.sh` を 1 回叩くだけ。
+「毎日 14:00 に走り出して、22:00 に止める」みたいな運用にしたいなら、`install-schedule.sh` を 1 回叩くだけ。
 
 ### インストール
 
@@ -106,17 +106,17 @@ launchctl list | grep pomodoro
 <key>StartCalendarInterval</key>
 <dict>
   <key>Hour</key>
-  <integer>8</integer>       <!-- ここを変える -->
+  <integer>6</integer>       <!-- ここを変える -->
   <key>Minute</key>
-  <integer>30</integer>      <!-- ここを変える -->
+  <integer>0</integer>       <!-- ここを変える -->
 </dict>
 ```
 
 2. `config.sh` の `SCHEDULE_START_TIME` / `SCHEDULE_STOP_TIME`（HHMM 4桁文字列、plist と一致させる）
 
 ```bash
-SCHEDULE_START_TIME="0830"
-SCHEDULE_STOP_TIME="2030"
+SCHEDULE_START_TIME="0600"
+SCHEDULE_STOP_TIME="1200"
 ```
 
 config.sh の値は、Mac 再起動時の `RunAtLoad` 起動が稼働時間帯内かどうかの判定に使われる（後述）。
@@ -156,8 +156,8 @@ LaunchAgent を unload して plist を消す。**現在動いている pomodoro
 ### スケジュール側で気をつけること
 
 - **start の二重発火** → `start.sh` は「既に running ならスキップ」する設計なので無害
-- **Mac が 08:30 にスリープ中だったら？** → 標準 macOS は「次に起き上がった時に launchd が遅延発火」してくれる。確実に走らせたいなら、システム設定 → バッテリー → スケジュールで Mac を 08:25 に起こす指定もできる
-- **20:30 に Pomodoro を強制停止される** → 集中作業中なら困るかも。delay したい時は `./uninstall-schedule.sh` で一時解除 → 翌朝 `./install-schedule.sh` で復帰
+- **Mac が 14:00 にスリープ中だったら？** → 標準 macOS は「次に起き上がった時に launchd が遅延発火」してくれる。確実に走らせたいなら、システム設定 → バッテリー → スケジュールで Mac を 13:55 に起こす指定もできる
+- **22:00 に Pomodoro を強制停止される** → 続けたい時は `./toggle.sh` で再開（時間帯外でも手動起動できる）。その日は止めたい時も `./toggle.sh` で OFF
 - **Mac 再起動でループが死ぬ** → start.plist は `RunAtLoad=true` なので、ログイン直後にも 1 回 `start.sh --scheduled` が走る。稼働時間帯内（config.sh の `SCHEDULE_START_TIME`〜`SCHEDULE_STOP_TIME`）なら自動復活、範囲外なら何もせず終了する。手動 `./start.sh`（引数なし）はガード対象外なので、いつでも起動できる
 
 ---

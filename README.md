@@ -13,7 +13,7 @@ README.md と setup-guide.md を読んだ上で、初回セットアップを最
 
 途中で以下を私に確認してください：
 - 状態ファイルを iCloud Drive に置くか、Mac 内のローカル (~/.pomodoro_state.txt) に置くか
-- 自動 start/stop の時刻 (デフォルトは 08:30 開始 / 20:30 停止)
+- 自動 start/stop の時刻 (デフォルトは 14:00 開始 / 22:00 停止)
 - 平日のみ動かすか、毎日動かすか
 
 macOS の UI 操作が必要なステップ (システム設定での通知許可、集中モードの例外設定など) は、
@@ -24,7 +24,7 @@ macOS の UI 操作が必要なステップ (システム設定での通知許�
 確認してから、本番設定 (25/5) に戻してください。
 
 最後に "./status.sh" を実行して、process が表示され state が "work" になっていれば完了です。
-「明日 08:30 から自動で始まります」と教えてください。
+「次の 14:00 から自動で始まります」と教えてください。
 ````
 
 > このプロンプト 1 回で、ターミナルで `git clone` → スクリプト実行権限付与 → 通知許可ガイド → 動作テスト → 自動スケジュール登録 まで完了します。手順を覚える必要はありません。
@@ -37,11 +37,13 @@ macOS の UI 操作が必要なステップ (システム設定での通知許�
 そのため、以下の構成で実装する：
 
 - **永続シェルプロセス** が `sleep` で 25分 / 5分を回す
-- 各フェーズ終了時に **`osascript` で通知**（サウンド付き）
+- 各フェーズ終了時に **`osascript` でカードを表示**（サウンド付き、60秒で自動的に閉じる）
+- 休憩開始時に macOS ショートカット（`BREAK_SHORTCUT`）を実行（例：筋トレ動画を開く）
+- **Zoom 会議中はカードもショートカットも出さない**（タイマーは裏で進む。zoom.us の UDP ソケット / CptHost で判定）
 - 現在フェーズ（`work` / `break`）を **iCloud Drive 上の状態ファイル**に書き出す
   - プロセスが死んだ場合の再開ヒント + 他デバイスからの観測用
 - `caffeinate -i` でラップして **アイドルスリープ抑止**
-- 起動 / 停止 / 状態確認は `start.sh` / `stop.sh` / `status.sh`
+- 起動 / 停止 / 状態確認は `start.sh` / `stop.sh` / `status.sh`、ワンクリック切替は `toggle.sh`
 
 ショートカットアプリは使わない。Mac 標準 + bash のみ。
 
@@ -56,7 +58,8 @@ pomodoro-loop/
 ├── start.sh                 # ループ開始
 ├── stop.sh                  # ループ停止
 ├── status.sh                # 現在状態の確認
-├── install-schedule.sh      # 毎日 08:30/20:30 の自動 start/stop を登録
+├── toggle.sh                # ON/OFF 切替（OFF した日は自動 start しない）
+├── install-schedule.sh      # 毎日 14:00/22:00 の自動 start/stop を登録
 ├── uninstall-schedule.sh    # スケジュール解除
 ├── launchd/                 # LaunchAgent plist 雛形（時刻はここで調整）
 └── pomodoro_state.txt       # 状態ファイルの雛形（初期値 "work"）
@@ -76,7 +79,13 @@ iCloud Drive に置きたい場合は `config.sh` の `STATE_FILE` を切り替�
 
 # ループ停止
 ./stop.sh
+
+# ON/OFF 切替（動いていれば停止、止まっていれば開始）
+./toggle.sh
 ```
+
+`toggle.sh` で OFF にした日は、`OFF_FLAG_FILE` に日付が記録され、その日の自動 start（再起動時の RunAtLoad 含む）はスキップされる。
+ショートカットアプリで「シェルスクリプトを実行」アクションに `toggle.sh` のフルパスを入れておけば、メニューバーからワンクリックで切り替えられる。
 
 初回起動時に状態ファイルが無ければ `work` で初期化される。
 
@@ -85,7 +94,7 @@ iCloud Drive に置きたい場合は `config.sh` の `STATE_FILE` を切り替�
 毎日決まった時刻に勝手に start / stop させる場合：
 
 ```bash
-./install-schedule.sh    # 08:30 start / 20:30 stop を毎日
+./install-schedule.sh    # 14:00 start / 22:00 stop を毎日
 ./uninstall-schedule.sh  # 解除
 ```
 

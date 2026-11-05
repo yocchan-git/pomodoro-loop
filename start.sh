@@ -13,6 +13,10 @@ if [[ "${1:-}" == "--scheduled" ]]; then
     echo "scheduled outside window (now=$now, allowed=${SCHEDULE_START_TIME}-${SCHEDULE_STOP_TIME})"
     exit 0
   fi
+  if [[ -f "$OFF_FLAG_FILE" && "$(cat "$OFF_FLAG_FILE")" == "$(date +%Y%m%d)" ]]; then
+    echo "manually turned off today (${OFF_FLAG_FILE}), skip scheduled start"
+    exit 0
+  fi
 fi
 
 # 既に走ってないか確認
