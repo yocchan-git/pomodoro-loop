@@ -1,6 +1,6 @@
 #!/bin/bash
 # pomodoro-loop の自動 start/stop スケジュールを LaunchAgent として登録する。
-# デフォルト: 14:00 start / 22:00 stop（毎日）。
+# デフォルト: 06:00 start / 21:00 stop（毎日。stop は安全網で、通常はループが 20:30 に自分で終わる）。
 # 時刻を変えたい場合は launchd/*.plist の Hour/Minute を編集してから再実行（冪等）。
 set -euo pipefail
 
@@ -24,8 +24,8 @@ done
 
 echo "---"
 echo "schedule installed:"
-echo "  start: 14:00 every day"
-echo "  stop:  22:00 every day"
+echo "  start: 06:00 every day"
+echo "  stop:  21:00 every day (safety net; the loop ends itself at SCHEDULE_STOP_TIME)"
 echo ""
 echo "verify with: launchctl list | grep pomodoro"
 echo "logs:        tail -f /tmp/pomodoro-schedule.log"
