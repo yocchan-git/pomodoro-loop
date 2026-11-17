@@ -9,7 +9,7 @@ source "${SCRIPT_DIR}/config.sh"
 # 手動 ./start.sh はいつでも起動可能。
 if [[ "${1:-}" == "--scheduled" ]]; then
   now=$(date +%H%M)
-  if [[ "$now" < "$SCHEDULE_START_TIME" || "$now" > "$SCHEDULE_STOP_TIME" ]]; then
+  if [[ "$now" < "$SCHEDULE_START_TIME" || ! "$now" < "$SCHEDULE_STOP_TIME" ]]; then
     echo "scheduled outside window (now=$now, allowed=${SCHEDULE_START_TIME}-${SCHEDULE_STOP_TIME})"
     exit 0
   fi
@@ -25,17 +25,19 @@ if [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
   exit 0
 fi
 
-# 状態ファイル初期化（無ければ "work" で開始）
-if [[ ! -f "$STATE_FILE" ]]; then
-  mkdir -p "$(dirname "$STATE_FILE")"
-  echo "work" > "$STATE_FILE"
-  echo "initialized state: work"
-fi
+# データ置き場を用意（logs/ など）
+mkdir -p "${DATA_DIR}/logs"
 
 # caffeinate -i でアイドルスリープを抑止しつつバックグラウンド起動
-nohup caffeinate -i "${SCRIPT_DIR}/pomodoro-loop.sh" \
-  > "$LOG_FILE" 2>&1 &
+# （テスト時 POMODORO_NO_SIDE_EFFECTS=1 は caffeinate を挟まない）
+if [[ "${POMODORO_NO_SIDE_EFFECTS:-}" == "1" ]]; then
+  nohup "${SCRIPT_DIR}/pomodoro-loop.sh" > "$LOG_FILE" 2>&1 &
+else
+  nohup caffeinate -i "${SCRIPT_DIR}/pomodoro-loop.sh" \
+    > "$LOG_FILE" 2>&1 &
+fi
 echo $! > "$PID_FILE"
 
-echo "pomodoro started (pid=$(cat "$PID_FILE"), state=$(cat "$STATE_FILE"))"
+echo "pomodoro started (pid=$(cat "$PID_FILE"))"
+echo "data: $DATA_DIR"
 echo "log: $LOG_FILE"
